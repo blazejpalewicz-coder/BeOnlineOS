@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#17191d">
+  <title>BeonlineOS</title>
+  <style>
+    :root {
+      --bg: #202226;
+      --panel: #292c31;
+      --panel-2: #33373e;
+      --border: #41464f;
+      --text: #f3f4f6;
+      --muted: #a6abb4;
+      --accent: #78a9ff;
+      --dock-height: 66px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      user-select: none;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse at 50% 35%, #30343a 0%, #24272c 52%, #1b1d21 100%);
+    }
+
+    button { font: inherit; }
+
+    .topbar {
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: rgba(18, 20, 23, .72);
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      font-size: 12px;
+      color: #e7e9ed;
+      z-index: 5;
+    }
+
+    .brand { font-weight: 650; letter-spacing: .2px; }
+    .topbar-right { display: flex; align-items: center; gap: 14px; color: var(--muted); }
+
+    .desktop {
+      position: absolute;
+      inset: 48px 18px calc(var(--dock-height) + 45px) 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 82px);
+      grid-auto-rows: 92px;
+      align-content: start;
+      justify-content: start;
+      gap: 8px;
+    }
+
+    .desktop-app {
+      width: 82px;
+      height: 88px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      color: var(--text);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .desktop-app:hover, .desktop-app:focus-visible {
+      background: rgba(255,255,255,.075);
+      border-color: rgba(255,255,255,.08);
+      outline: none;
+    }
+
+    .app-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      background: #3b414a;
+      border: 1px solid rgba(255,255,255,.12);
+      font-size: 21px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.18);
+    }
+
+    .app-label {
+      max-width: 78px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+      text-shadow: 0 1px 3px #000;
+    }
+
+    .dock-wrap {
+      position: fixed;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      z-index: 30;
+      transition: transform .22s ease, opacity .22s ease;
+    }
+
+    .dock {
+      height: var(--dock-height);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 12px;
+      background: rgba(28, 30, 34, .94);
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 15px;
+      box-shadow: 0 12px 35px rgba(0,0,0,.4);
+      backdrop-filter: blur(18px);
+    }
+
+    .dock.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(100px);
+    }
+
+    .dock-button {
+      width: 46px;
+      height: 46px;
+      border: 0;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 22px;
+    }
+
+    .dock-button:hover, .dock-button:focus-visible {
+      background: rgba(255,255,255,.11);
+      outline: none;
+    }
+
+    .dock-divider {
+      width: 1px;
+      height: 34px;
+      background: rgba(255,255,255,.17);
+      margin: 0 3px;
+    }
+
+    .dock-toggle {
+      position: fixed;
+      z-index: 40;
+      left: 50%;
+      bottom: 3px;
+      transform: translateX(-50%);
+      width: 34px;
+      height: 17px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-bottom: 0;
+      border-radius: 9px 9px 0 0;
+      background: rgba(35,38,43,.94);
+      color: #dfe3e9;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 13px;
+      padding: 0;
+    }
+
+    .dock-toggle:hover { background: #41464f; }
+
+    .window {
+      position: absolute;
+      left: 50%;
+      top: 47%;
+      transform: translate(-50%, -50%);
+      width: min(620px, calc(100vw - 34px));
+      height: min(410px, calc(100vh - 125px));
+      min-height: 230px;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #505660;
+      border-radius: 12px;
+      background: #25282d;
+      box-shadow: 0 22px 70px rgba(0,0,0,.55);
+      z-index: 15;
+    }
+
+    .window.open { display: flex; }
+
+    .window-header {
+      height: 42px;
+      flex: 0 0 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px 0 15px;
+      background: #30343a;
+      border-bottom: 1px solid #454a53;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .window-close {
+      width: 27px;
+      height: 27px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #d9dce1;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .window-close:hover { background: #b94b4b; color: white; }
+
+    .window-content {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 25px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .window-content strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .library-backdrop {
+      position: fixed;
+      inset: 34px 0 0;
+      z-index: 20;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(10,11,13,.76);
+      backdrop-filter: blur(12px);
+    }
+
+    .library-backdrop.open { display: flex; }
+
+    .library {
+      width: min(760px, 100%);
+      max-height: min(620px, 100%);
+      overflow: auto;
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 17px;
+      background: rgba(35,38,43,.97);
+      box-shadow: 0 25px 80px rgba(0,0,0,.48);
+    }
+
+    .library-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 23px;
+    }
+
+    .library-heading h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 650;
+    }
+
+    .library-heading span { color: var(--muted); font-size: 12px; }
+
+    .library-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+      gap: 12px;
+    }
+
+    .library-app {
+      min-height: 104px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      background: transparent;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      cursor: pointer;
+    }
+
+    .library-app:hover, .library-app:focus-visible {
+      background: rgba(255,255,255,.075);
+      border-color: rgba(255,255,255,.1);
+      outline: none;
+    }
+
+    .library-app .app-icon { width: 48px; height: 48px; font-size: 23px; }
+    .library-app .app-label { max-width: 100px; font-size: 12px; text-shadow: none; }
+
+    @media (max-width: 520px) {
+      .topbar { padding: 0 10px; }
+      .desktop { left: 9px; right: 9px; grid-template-columns: repeat(auto-fill, 75px); }
+      .desktop-app { width: 75px; }
+      .dock { gap: 2px; padding: 7px; }
+      .dock-button { width: 42px; }
+      .library { padding: 17px; }
+      .library-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">◈ BeonlineOS</div>
+    <div class="topbar-right">
+      <span id="clock">--:--</span>
+      <span>●</span>
+    </div>
+  </header>
+
+  <main class="desktop" aria-label="Desktop">
+    <button class="desktop-app" data-app="Browser">
+      <span class="app-icon">🌐</span><span class="app-label">Browser</span>
+    </button>
+    <button class="desktop-app" data-app="Files">
+      <span class="app-icon">📁</span><span class="app-label">Files</span>
+    </button>
+    <button class="desktop-app" data-app="Settings">
+      <span class="app-icon">⚙️</span><span class="app-label">Settings</span>
+    </button>
+  </main>
+
+  <section class="window" id="appWindow" role="dialog" aria-modal="false" aria-labelledby="windowTitle">
+    <div class="window-header">
+      <span id="windowTitle">Application</span>
+      <button class="window-close" id="closeWindow" aria-label="Close window">×</button>
+    </div>
+    <div class="window-content">
+      <div>
+        <strong id="windowAppName">Application</strong>
+        <span>Application under development.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="library-backdrop" id="libraryBackdrop" aria-hidden="true">
+    <div class="library" role="dialog" aria-modal="true" aria-labelledby="libraryTitle">
+      <div class="library-heading">
+        <div>
+          <h1 id="libraryTitle">App Library</h1>
+          <span>Your applications</span>
+        </div>
+        <span>BOOS</span>
+      </div>
+      <div class="library-grid" id="libraryGrid"></div>
+    </div>
+  </section>
+
+  <div class="dock-wrap" id="dockWrap">
+    <nav class="dock" id="dock" aria-label="Application dock">
+      <button class="dock-button" data-app="Browser" title="Browser">🌐</button>
+      <button class="dock-button" data-app="Files" title="Files">📁</button>
+      <button class="dock-button" id="openLibrary" title="App Library">⊞</button>
+      <span class="dock-divider"></span>
+      <button class="dock-button" data-app="Settings" title="Settings">⚙️</button>
+    </nav>
+  </div>
+
+  <button class="dock-toggle" id="dockToggle" aria-label="Hide or show dock" title="Hide or show dock">⌄</button>
+
+  <script>
+    const apps = [
+      { name: "Browser", icon: "🌐" },
+      { name: "Files", icon: "📁" },
+      { name: "Settings", icon: "⚙️" },
+      { name: "Terminal", icon: "⌨️" },
+      { name: "Notes", icon: "📝" },
+      { name: "Calendar", icon: "📅" },
+      { name: "App Store", icon: "🛍️" },
+      { name: "System Monitor", icon: "📊" },
+      { name: "Calculator", icon: "🧮" },
+      { name: "Photos", icon: "🖼️" },
+      { name: "Music", icon: "🎵" },
+      { name: "About BOOS", icon: "◈" }
+    ];
+
+    const appWindow = document.getElementById("appWindow");
+    const windowTitle = document.getElementById("windowTitle");
+    const windowAppName = document.getElementById("windowAppName");
+    const libraryBackdrop = document.getElementById("libraryBackdrop");
+    const libraryGrid = document.getElementById("libraryGrid");
+    const dock = document.getElementById("dock");
+    const dockToggle = document.getElementById("dockToggle");
+
+    function openApp(name) {
+      windowTitle.textContent = name;
+      windowAppName.textContent = name;
+      appWindow.classList.add("open");
+      closeLibrary();
+    }
+
+    function closeApp() {
+      appWindow.classList.remove("open");
+    }
+
+    function openLibrary() {
+      libraryBackdrop.classList.add("open");
+      libraryBackdrop.setAttribute("aria-hidden", "false");
+    }
+
+    function closeLibrary() {
+      libraryBackdrop.classList.remove("open");
+      libraryBackdrop.setAttribute("aria-hidden", "true");
+    }
+
+    apps.forEach(app => {
+      const button = document.createElement("button");
+      button.className = "library-app";
+      button.dataset.app = app.name;
+      button.innerHTML = `<span class="app-icon">${app.icon}</span><span class="app-label">${app.name}</span>`;
+      button.addEventListener("click", () => openApp(app.name));
+      libraryGrid.appendChild(button);
+    });
+
+    document.querySelectorAll("[data-app]").forEach(button => {
+      button.addEventListener("click", () => openApp(button.dataset.app));
+    });
+
+    document.getElementById("closeWindow").addEventListener("click", closeApp);
+    document.getElementById("openLibrary").addEventListener("click", openLibrary);
+
+    libraryBackdrop.addEventListener("click", event => {
+      if (event.target === libraryBackdrop) closeLibrary();
+    });
+
+    dockToggle.addEventListener("click", () => {
+      const hidden = dock.classList.toggle("hidden");
+      dockToggle.textContent = hidden ? "⌃" : "⌄";
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        closeLibrary();
+        closeApp();
+      }
+    });
+
+    function updateClock() {
+      document.getElementById("clock").textContent =
+        new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(new Date());
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
